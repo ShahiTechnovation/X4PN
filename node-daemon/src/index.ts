@@ -1,3 +1,4 @@
+import { PlatformClient } from "./platform-client";
 import { WireGuardService } from "./wireguard";
 import os from "os";
 
@@ -39,8 +40,15 @@ async function main() {
             process.exit(1);
         }
 
-        // 3. Connect to Platform (Placeholder)
+        // 3. Connect to Platform
         console.log("📡 Connecting to Platform API...");
+        const PLATFORM_URL = process.env.PLATFORM_URL || "http://localhost:5000";
+
+        // For prototype, we use placeholder IDs. In production these come from a config file or env
+        const NODE_ID = process.env.NODE_ID || "node_123";
+        const OPERATOR_ADDRESS = process.env.OPERATOR_ADDRESS || "0x0000000000000000000000000000000000000000";
+
+        const platform = new PlatformClient(PLATFORM_URL, NODE_ID, OPERATOR_ADDRESS);
 
         // 4. Teardown on exit
         const stop = async () => {

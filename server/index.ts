@@ -59,8 +59,15 @@ app.use((req, res, next) => {
   next();
 });
 
+import { setupSocketServer } from "./socket";
+
 (async () => {
   await registerRoutes(httpServer, app);
+
+  // Initialize Socket.IO for Node communication
+  const io = setupSocketServer(httpServer);
+  // Store io instance in app locals if needed elsewhere
+  app.set("io", io);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -86,6 +93,6 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(port, "localhost", () => {
-      log(`serving on port ${port}`);
-    });
+    log(`serving on port ${port}`);
+  });
 })();
