@@ -1,0 +1,20 @@
+{
+  "name": "x4pn-contracts",
+  "version": "1.0.0",
+  "description": "X4PN VPN Smart Contracts",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:mumbai": "hardhat run scripts/deploy.js --network polygon_mumbai",
+    "deploy:amoy": "hardhat run scripts/deploy.js --network polygon_amoy",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network polygon_mainnet",
+    "node": "hardhat node"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.19.0"
+  }
+}
