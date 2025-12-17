@@ -4,3 +4,21 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Security
+*.pem
+*.key
+
+# Editor/OS
+.vscode
+.idea
+
+# Blockchain Artifacts
+contracts/artifacts
+contracts/cache
+contracts/typechain-types
