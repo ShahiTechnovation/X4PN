@@ -30,7 +30,7 @@ We will enforce a strict separation of concerns by treating the system as three 
 
 ### 3. The Protocol (`/contracts`)
 *   **Role**: The Trust Layer.
-*   **Infrastructure**: EVM Blockchain (Polygon/BSC Mainnet).
+*   **Infrastructure**: EVM Blockchain (Base Mainnet).
 *   **Responsibility**:
     *   Escrowing user funds (USDC).
     *   Streaming payments to Operator wallets.
@@ -74,11 +74,11 @@ This is the most critical technical challenge. The Node Daemon needs to dynamica
 
 ## 🌐 Execution Phase 3: Production Blockchain Ops
 
-Moving from Hardhat Local/Mumbai to Mainnet requires specific security measures.
+Moving from Hardhat Local/Base Sepolia to Mainnet requires specific security measures.
 
 ### 3.1 Security & Deployment
 *   **Private Key Management**: Never store keys in code. Use encrypted `.env` or Hardware Wallet signing for initial deployment.
-*   **Verification**: Automated Etherscan/PolygonScan verification scripts in Hardhat.
+*   **Verification**: Automated Basescan verification scripts in Hardhat.
 *   **Multisig**: Transfer ownership of `X4PNToken` and `X4PNVpnSessions` to a Gnosis Safe (Multisig) wallet immediately after deployment.
 
 ### 3.2 Network Configuration

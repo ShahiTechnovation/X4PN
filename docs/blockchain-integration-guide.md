@@ -173,14 +173,14 @@ Deployment checklist:
 
 ### Common Issues
 
-1. **Insufficient gas**: Ensure users have enough MATIC for gas fees
+1. **Insufficient gas**: Ensure users have enough ETH for gas fees
 2. **Contract not found**: Verify contract addresses are correct
 3. **Unauthorized access**: Check that only authorized addresses can call certain functions
 4. **Network issues**: Ensure users are connected to the correct network
 
 ### Debugging Tips
 
-1. Use PolygonScan to verify transaction details
+1. Use Basescan to verify transaction details
 2. Check contract events for debugging information
 3. Use console.log in smart contracts during development
 4. Monitor gas usage to optimize contract efficiency

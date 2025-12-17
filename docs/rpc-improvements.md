@@ -4,20 +4,18 @@
 
 1. **RPC Endpoint Errors**: Fixed "RPC endpoint returned too many errors" by implementing retry logic with exponential backoff
 2. **Port Conflicts**: Resolved EADDRINUSE errors by properly terminating conflicting processes
-3. **Environment Configuration**: Updated .env file with proper RPC URLs for Polygon networks
+3. **Environment Configuration**: Updated .env file with proper RPC URLs for Base networks
 
 ## Changes Made
 
 ### 1. Environment Configuration (.env)
 Updated RPC URLs to use proper HTTPS endpoints:
-- `RPC_URL=https://polygon-rpc.com`
-- `MUMBAI_RPC_URL=https://rpc-mumbai.maticvigil.com`
-- `POLYGON_RPC_URL=https://polygon-rpc.com`
-- `AMOY_RPC_URL=https://rpc-amoy.polygon.technology`
+- `BASE_RPC_URL=https://mainnet.base.org`
+- `BASE_SEPOLIA_RPC_URL=https://sepolia.base.org`
 
 ### 2. Frontend Configuration (client/src/lib/config.ts)
 Created a new configuration file with:
-- Default RPC endpoints for all Polygon networks
+- Default RPC endpoints for all Base networks
 - Fallback RPC endpoints for redundancy
 - Network configuration with chain IDs
 

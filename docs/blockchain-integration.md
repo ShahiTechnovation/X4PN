@@ -35,14 +35,14 @@ const signer = await provider.getSigner();
 
 // Create contract instances
 const tokenContract = new ethers.Contract(
-  x4pnToken.networks.polygon.address,
-  x4pnToken.abi,
+  "0xd84612a360359cF85E991A01dEAbB3dc8ab121F8", // Base Token Address
+  x4pnToken,
   signer
 );
 
 const sessionsContract = new ethers.Contract(
-  x4pnVpnSessions.networks.polygon.address,
-  x4pnVpnSessions.abi,
+  "0xDFcb0654919A4AE22eCfF196cd015F156053fd6D", // Base Sessions Address
+  x4pnVpnSessions,
   signer
 );
 ```
@@ -102,12 +102,12 @@ try {
 
 ## Network Considerations
 
-Ensure users are connected to the correct network (Polygon Mainnet):
+Ensure users are connected to the correct network (Base Mainnet):
 
 ```typescript
 const chainId = await provider.getNetwork().then(network => network.chainId);
-if (chainId !== 137) {
-  // Prompt user to switch to Polygon Mainnet
+if (chainId !== 8453) {
+  // Prompt user to switch to Base Mainnet
 }
 ```
 

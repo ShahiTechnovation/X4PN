@@ -5,13 +5,13 @@ This directory contains the compiled artifacts and deployment information for th
 ## Deployed Contracts
 
 ### X4PN Token
-- **Network**: Polygon Mainnet
-- **Address**: 0x91a26c236241a7211BD3ebFC867Fa1A7ca6D0A33
+- **Network**: Base Mainnet
+- **Address**: 0xd84612a360359cF85E991A01dEAbB3dc8ab121F8
 - **ABI**: Included in X4PNToken.json
 
 ### X4PN VPN Sessions
-- **Network**: Polygon Mainnet
-- **Address**: 0x148466D329C9E1B502fd41A65a073b39b3D43751
+- **Network**: Base Mainnet
+- **Address**: 0xDFcb0654919A4AE22eCfF196cd015F156053fd6D
 - **ABI**: Included in X4PNVpnSessions.json
 ## Usage
 
@@ -25,8 +25,8 @@ const tokenAbi = x4pnToken.abi;
 const sessionsAbi = x4pnVpnSessions.abi;
 
 // Access the contract addresses
-const tokenAddress = x4pnToken.networks.polygon.address;
-const sessionsAddress = x4pnVpnSessions.networks.polygon.address;
+const tokenAddress = "0xd84612a360359cF85E991A01dEAbB3dc8ab121F8"; // Base Address
+const sessionsAddress = "0xDFcb0654919A4AE22eCfF196cd015F156053fd6D"; // Base Address
 ```
 
 ### Frontend Integration
@@ -42,14 +42,14 @@ const provider = new ethers.BrowserProvider(window.ethereum);
 const signer = await provider.getSigner();
 
 const tokenContract = new ethers.Contract(
-  x4pnToken.networks.polygon.address,
-  x4pnToken.abi,
+  "0xd84612a360359cF85E991A01dEAbB3dc8ab121F8",
+  x4pnToken, // ABI
   signer
 );
 
 const sessionsContract = new ethers.Contract(
-  x4pnVpnSessions.networks.polygon.address,
-  x4pnVpnSessions.abi,
+  "0xDFcb0654919A4AE22eCfF196cd015F156053fd6D",
+  x4pnVpnSessions, // ABI
   signer
 );
 

@@ -30,7 +30,7 @@ X4PN is a next-generation Decentralized VPN (dVPN) platform that revolutionizes 
 *   **Solidity** (Smart Contracts)
 *   **Hardhat** (Development Environment)
 *   **Ethers.js** (Blockchain Interaction)
-*   **Network**: Compatible with EVM chains (Polygon, BSC).
+*   **Network**: Compatible with EVM chains (Base).
 
 ## 📋 Prerequisites
 
@@ -63,7 +63,7 @@ Before running the project, ensure you have the following installed:
     NODE_ENV=development
 
     # Blockchain (Optional for local dev)
-    POLYGON_RPC_URL=https://polygon-rpc.com
+    BASE_RPC_URL=https://mainnet.base.org
     ```
 
 4.  **Database Migration**

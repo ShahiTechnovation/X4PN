@@ -4,9 +4,9 @@ This document explains how to use the blockchain-enabled components in the X4PN 
 
 ## Overview
 
-The blockchain integration allows users to interact directly with the smart contracts deployed on Polygon Mainnet:
-- X4PN Token Contract: `0x91a26c236241a7211BD3ebFC867Fa1A7ca6D0A33`
-- X4PN VPN Sessions Contract: `0x3445dECB24d1A81459F9D9bD0a531B20E1fc735D`
+The blockchain integration allows users to interact directly with the smart contracts deployed on Base Mainnet:
+- X4PN Token Contract: `0xd84612a360359cF85E991A01dEAbB3dc8ab121F8`
+- X4PN VPN Sessions Contract: `0xDFcb0654919A4AE22eCfF196cd015F156053fd6D`
 
 ## New Blockchain Components
 
@@ -19,13 +19,13 @@ A new dashboard page that interacts directly with the blockchain contracts inste
 Replaces the traditional deposit modal with direct blockchain interactions:
 - Approves USDC spending
 - Deposits USDC to the VPN contract
-- Shows transaction status and links to Polygonscan
+- Shows transaction status and links to Basescan
 
 ### 3. Blockchain Withdraw Modal
 
 Allows withdrawal of USDC directly from the VPN contract:
 - Withdraws USDC to the user's wallet
-- Shows transaction status and links to Polygonscan
+- Shows transaction status and links to Basescan
 
 ### 4. Blockchain Session Control
 
@@ -68,7 +68,7 @@ await getX4PNBalance(signer, userAddress);
 
 1. Navigate to the Blockchain Dashboard at `/blockchain`
 2. Connect your MetaMask wallet
-3. Ensure you're on Polygon Mainnet
+3. Ensure you're on Base Mainnet
 4. Deposit USDC using the blockchain deposit modal
 5. Connect to a VPN node using the blockchain session control
 6. Withdraw funds using the blockchain withdraw modal
@@ -92,7 +92,7 @@ All blockchain interactions include proper error handling:
 ### User Experience
 
 - Real-time transaction status updates
-- Links to Polygonscan for transaction verification
+- Links to Basescan for transaction verification
 - Automatic balance refreshing
 - Clear error messages
 

@@ -6,7 +6,7 @@ async function main() {
   console.log("Deploying contracts with account:", deployer.address);
   console.log("Account balance:", (await deployer.provider.getBalance(deployer.address)).toString());
 
-  // USDC address on Polygon Mumbai testnet
+  // USDC address on Base Sepolia testnet
   // For mainnet, use the actual USDC contract address
   // Determine USDC address based on network
   let USDC_ADDRESS = process.env.USDC_ADDRESS;
@@ -15,10 +15,8 @@ async function main() {
     const network = hre.network.name;
     if (network === "base") {
       USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base Mainnet USDC
-    } else if (network === "base_sepolia") {
-      USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia USDC
     } else {
-      USDC_ADDRESS = "0x0FA8781a83E46826621b3BC094Ea2A0212e71B23"; // Fallback (Mumbai)
+      USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia USDC
     }
   }
 

@@ -1,7 +1,7 @@
 # X4PN VPN - Design Guidelines
 
 ## Design Approach
-**Reference-Based Hybrid**: Drawing inspiration from successful Web3 applications (Uniswap, MetaMask, Polygon) combined with modern dashboard patterns (Linear, Notion). This product requires both trust/credibility and functional clarity for handling blockchain payments and VPN sessions.
+**Reference-Based Hybrid**: Drawing inspiration from successful Web3 applications (Uniswap, MetaMask, Base) combined with modern dashboard patterns (Linear, Notion). This product requires both trust/credibility and functional clarity for handling blockchain payments and VPN sessions.
 
 **Core Principle**: "Powerful simplicity" - complex blockchain operations presented through clean, confidence-inspiring interfaces.
 
@@ -64,7 +64,7 @@
 - "Connect Wallet" button (large, prominent) when disconnected
 - Connected state shows: truncated address (0x1234...5678), network badge, balance preview
 - Dropdown on click: Full address, copy button, disconnect option
-- Network indicator: Polygon badge with chain icon
+- Network indicator: Base badge with chain icon
 
 ### Data Tables
 **Sessions History Table**:

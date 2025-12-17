@@ -8,7 +8,7 @@ async function main() {
     console.log(`Network: ${network}`);
 
     if (network === "hardhat" || network === "localhost") {
-        console.warn("⚠️  Warning: Deploying to local network. For production, use --network polygon_mainnet or bsc_mainnet");
+        console.warn("⚠️  Warning: Deploying to local network. For production, use --network base");
     } else {
         // Check for real funds and keys
         if (!process.env.DEPLOYER_PRIVATE_KEY) {
@@ -17,7 +17,7 @@ async function main() {
         const [deployer] = await hre.ethers.getSigners();
         const balance = await deployer.provider.getBalance(deployer.address);
         console.log(`Deployer: ${deployer.address}`);
-        console.log(`Balance: ${hre.ethers.formatEther(balance)} ETH/MATIC/BNB`);
+        console.log(`Balance: ${hre.ethers.formatEther(balance)} ETH`);
 
         if (balance.toString() === "0") {
             throw new Error("❌ Insufficient funds for deployment");
@@ -35,7 +35,7 @@ async function main() {
     // 3. Deploy Sessions Contract
     console.log("\nDeploying VPN Sessions Contract...");
     // Production Config
-    const USDC_ADDRESS = process.env.USDC_ADDRESS || "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // Polygon USDC
+    const USDC_ADDRESS = process.env.USDC_ADDRESS || "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
     const FEE_RECIPIENT = process.env.FEE_RECIPIENT || (await hre.ethers.getSigners())[0].address;
 
     const Sessions = await hre.ethers.getContractFactory("X4PNVpnSessions");
@@ -51,8 +51,8 @@ async function main() {
     await tx.wait();
     console.log("✅ Sessions contract authorized as Minter");
 
-    // 5. Verification (Etherscan/PolygonScan)
-    if (network !== "hardhat" && network !== "localhost" && process.env.POLYGONSCAN_API_KEY) {
+    // 5. Verification (Basescan)
+    if (network !== "hardhat" && network !== "localhost" && process.env.BASESCAN_API_KEY) {
         console.log("\nWaiting for block confirmations before verification...");
         // Wait ~6 blocks
         await sessions.deploymentTransaction().wait(6);
