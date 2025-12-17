@@ -1,5 +1,8 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
+import { setupAuth } from "./auth";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
@@ -21,6 +24,20 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// Session Middleware
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "dev_secret_key_123", // TODO: Move to .env
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // Secure only in prod (HTTPS)
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  })
+);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -62,6 +79,7 @@ app.use((req, res, next) => {
 import { setupSocketServer } from "./socket";
 
 (async () => {
+  setupAuth(app); // Auth routes first
   await registerRoutes(httpServer, app);
 
   // Initialize Socket.IO for Node communication

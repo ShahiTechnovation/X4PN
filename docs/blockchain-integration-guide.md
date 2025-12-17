@@ -13,16 +13,16 @@ Currently, only partial functionality is implemented in these contracts.
 
 ## Contract Addresses
 
-The contracts are deployed on Polygon Mainnet:
+The contracts will be deployed on Base Mainnet:
 
-- **X4PN Token**: `0x91a26c236241a7211BD3ebFC867Fa1A7ca6D0A33`
-- **X4PN VPN Sessions**: `0x3445dECB24d1A81459F9D9bD0a531B20E1fc735D`
+- **X4PN Token**: `[To be deployed]`
+- **X4PN VPN Sessions**: `[To be deployed]`
 
 ## Available Functions
 
 ### X4PN Token Contract
 
-The following functions are currently available:
+The following functions are implemented:
 
 1. `balanceOf(address)` - View function to get token balance
 2. `approve(address, uint256)` - Approve spending allowance
@@ -37,18 +37,13 @@ The following functions are currently available:
 
 ### X4PN VPN Sessions Contract
 
-The following functions are currently available:
-
-1. `mintRewards(address, uint256, uint256)` - Mint reward tokens for a specific session
-
-## Missing Functions
-
-The following functions need to be implemented in the smart contracts for full functionality:
+The following functions are implemented:
 
 ### VPN Session Management
 - `startSession(address, uint256)` - Start a new VPN session
 - `endSession()` - End the current VPN session
 - `settleSession()` - Settle payments for the current session
+- `settleSessionWithSignature(uint256, uint256, uint256, bytes)` - Settle using off-chain signature (x402)
 - `getActiveSession(address)` - Get details of active session for a user
 - `getSession(uint256)` - Get details of a specific session
 - `registerAsOperator()` - Register as a VPN node operator
@@ -56,15 +51,13 @@ The following functions need to be implemented in the smart contracts for full f
 ### Financial Operations
 - `deposit(uint256)` - Deposit USDC to use for VPN payments
 - `withdraw(uint256)` - Withdraw USDC balance
-- `getUserBalance(address)` - Get USDC balance for a user
-- `getNodeEarnings(address)` - Get earnings for a node operator
 
 ## Implementation Roadmap
 
-### Phase 1: Core Functionality
+### Phase 1: Core Functionality (Completed)
 1. Implement session management functions in X4PNVpnSessions.sol
 2. Implement financial operations in X4PNVpnSessions.sol
-3. Update frontend components to use real contract functions instead of placeholders
+3. Update frontend components to use real contract functions
 
 ### Phase 2: Advanced Features
 1. Implement governance features
@@ -139,11 +132,20 @@ Frontend components should be tested with:
 
 Before deploying to mainnet, test on:
 
-1. Polygon Mumbai Testnet
-2. Ethereum Sepolia Testnet
-3. Local Hardhat network
+1. Base Sepolia Testnet
+2. Local Hardhat network
 
 ### Mainnet Deployment
+
+Deployment checklist:
+
+1. Verify all contract functions work as expected
+2. Audit smart contracts for security vulnerabilities
+3. Test frontend integration thoroughly
+4. Prepare deployment scripts
+5. Execute deployment with proper multisig controls
+
+## Future Enhancements
 
 Deployment checklist:
 

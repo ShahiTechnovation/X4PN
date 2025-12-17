@@ -14,8 +14,8 @@ import { DollarSign, Loader2, CheckCircle2, AlertCircle, ExternalLink } from "lu
 import { formatUSDC } from "@/lib/wallet";
 import { useWallet } from "@/lib/wallet";
 import { ethers } from "ethers";
-import { 
-  depositUSDC, 
+import {
+  depositUSDC,
   approveUSDC,
   getUserBalance
 } from "@/lib/contracts";
@@ -26,7 +26,7 @@ interface BlockchainDepositModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentBalance: number;
-  onDepositSuccess?: () => void;
+  onDepositSuccess?: (amount: number) => void;
 }
 
 type DepositStep = "input" | "approve" | "deposit" | "confirming" | "success" | "error";
@@ -48,42 +48,42 @@ export function BlockchainDepositModal({
 
   const handleDeposit = async () => {
     if (!address || !window.ethereum) return;
-    
+
     const depositAmount = parseFloat(amount);
     if (isNaN(depositAmount) || depositAmount <= 0) {
       setError("Please enter a valid amount");
       return;
     }
-    
+
     try {
       // Initialize provider and signer
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      
+
       // Convert amount to USDC decimals (6)
       const amountInWei = ethers.parseUnits(depositAmount.toString(), 6);
-      
+
       setStep("approve");
-      
+
       // Approve USDC spending with enhanced error handling
       const approveTx = await approveUSDC(CONTRACT_ADDRESSES.VPN_SESSIONS, amountInWei, signer);
       await approveTx.wait();
-      
+
       setStep("deposit");
-      
+
       // Deposit USDC to VPN contract with enhanced error handling
       const tx = await depositUSDC(amountInWei, signer);
       setTxHash(tx.hash);
-      
+
       setStep("confirming");
-      
+
       // Wait for transaction confirmation
       const receipt = await tx.wait();
-      
-      if (receipt.status === 1) {
+
+      if (receipt && receipt.status === 1) {
         setStep("success");
         if (onDepositSuccess) {
-          onDepositSuccess();
+          onDepositSuccess(depositAmount);
         }
         toast({
           title: "Deposit Successful",
@@ -178,18 +178,18 @@ export function BlockchainDepositModal({
             <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
             <div>
               <p className="font-medium">
-                {step === "approve" 
-                  ? "Approving USDC..." 
-                  : step === "deposit" 
-                  ? "Depositing..." 
-                  : "Confirming Transaction..."}
+                {step === "approve"
+                  ? "Approving USDC..."
+                  : step === "deposit"
+                    ? "Depositing..."
+                    : "Confirming Transaction..."}
               </p>
               <p className="text-sm text-muted-foreground">
                 {step === "approve"
                   ? "Please confirm the approval in your wallet"
                   : step === "deposit"
-                  ? "Processing your deposit transaction"
-                  : "Waiting for blockchain confirmation"}
+                    ? "Processing your deposit transaction"
+                    : "Waiting for blockchain confirmation"}
               </p>
             </div>
           </div>
@@ -205,12 +205,12 @@ export function BlockchainDepositModal({
               </p>
               {txHash && (
                 <a
-                  href={`https://polygonscan.com/tx/${txHash}`}
+                  href={`https://basescan.org/tx/${txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
                 >
-                  View on Polygonscan <ExternalLink className="h-3 w-3" />
+                  View on Basescan <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>

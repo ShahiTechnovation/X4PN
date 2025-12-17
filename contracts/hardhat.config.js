@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
-const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY || "";
+const BASESCAN_API_KEY = process.env.BASESCAN_API_KEY || "";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -22,38 +22,39 @@ module.exports = {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
-    polygon_mumbai: {
-      url: process.env.MUMBAI_RPC_URL || "https://rpc-mumbai.maticvigil.com",
+    base: {
+      url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
       accounts: [PRIVATE_KEY],
-      chainId: 80001,
-      gasPrice: 35000000000,
+      chainId: 8453,
+      gasPrice: 100000000,
     },
-    polygon_mainnet: {
-      url: process.env.POLYGON_RPC_URL || "https://polygon-rpc.com",
+    base_sepolia: {
+      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
       accounts: [PRIVATE_KEY],
-      chainId: 137,
-      gasPrice: 50000000000,
-    },
-    polygon_amoy: {
-      url: process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
-      accounts: [PRIVATE_KEY],
-      chainId: 80002,
-      gasPrice: 35000000000,
+      chainId: 84532,
+      gasPrice: 100000000,
     },
   },
   etherscan: {
     apiKey: {
-      polygonMumbai: POLYGONSCAN_API_KEY,
-      polygon: POLYGONSCAN_API_KEY,
-      polygonAmoy: POLYGONSCAN_API_KEY,
+      base: BASESCAN_API_KEY,
+      baseSepolia: BASESCAN_API_KEY,
     },
     customChains: [
       {
-        network: "polygonAmoy",
-        chainId: 80002,
+        network: "base",
+        chainId: 8453,
         urls: {
-          apiURL: "https://api-amoy.polygonscan.com/api",
-          browserURL: "https://amoy.polygonscan.com",
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org",
         },
       },
     ],

@@ -15,7 +15,7 @@ import { DollarSign, Coins, Loader2, CheckCircle2, AlertCircle, ExternalLink } f
 import { formatUSDC, formatX4PN } from "@/lib/wallet";
 import { useWallet } from "@/lib/wallet";
 import { ethers } from "ethers";
-import { 
+import {
   withdrawUSDC,
   getX4PNBalance,
   transferX4PN
@@ -70,9 +70,9 @@ export function BlockchainWithdrawModal({
       // Initialize provider and signer
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      
+
       setStep("withdraw");
-      
+
       let tx;
       if (token === "usdc") {
         // Convert amount to USDC decimals (6)
@@ -82,14 +82,15 @@ export function BlockchainWithdrawModal({
         // Convert amount to X4PN decimals (18)
         const amountInWei = ethers.parseEther(withdrawAmount.toString());
         // For X4PN tokens, we need to use the standard transfer function
+        if (!address) throw new Error("Wallet not connected");
         tx = await transferX4PN(signer, address, amountInWei);
       }
-      
+
       if (tx && tx.hash) {
         setTxHash(tx.hash);
       }
       setStep("confirming");
-      
+
       // Wait for transaction confirmation
       let receipt;
       if (tx && tx.wait) {
@@ -98,8 +99,8 @@ export function BlockchainWithdrawModal({
         // Simulate successful receipt
         receipt = { status: 1 };
       }
-      
-      if (receipt.status === 1) {
+
+      if (receipt && receipt.status === 1) {
         setStep("success");
         if (onWithdrawSuccess) {
           onWithdrawSuccess();
@@ -210,8 +211,8 @@ export function BlockchainWithdrawModal({
             <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
             <div>
               <p className="font-medium">
-                {step === "withdraw" 
-                  ? "Processing Withdrawal..." 
+                {step === "withdraw"
+                  ? "Processing Withdrawal..."
                   : "Confirming Transaction..."}
               </p>
               <p className="text-sm text-muted-foreground">
@@ -236,12 +237,12 @@ export function BlockchainWithdrawModal({
               </p>
               {txHash && (
                 <a
-                  href={`https://polygonscan.com/tx/${txHash}`}
+                  href={`https://basescan.org/tx/${txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
                 >
-                  View on Polygonscan <ExternalLink className="h-3 w-3" />
+                  View on Basescan <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>

@@ -51,7 +51,6 @@ export class WireGuardService {
         // 1. Create Configuration File
         const confContent = `
 [Interface]
-Identify = X4PN-Node
 PrivateKey = ${this.config.privateKey}
 Address = ${this.config.address}
 ListenPort = ${this.config.port}
@@ -74,6 +73,8 @@ PostDown = iptables -D FORWARD -i ${this.config.interfaceName} -j ACCEPT; iptabl
             console.log(`[WireGuard] Interface ${this.config.interfaceName} is UP.`);
         } catch (error: any) {
             console.error(`[WireGuard] Failed to bring up interface: ${error.message}`);
+            // If strictly kernel mode was requested but failed, this will catch it.
+            // On WSL, installing wireguard-go might be needed if this fails.
             throw error;
         }
     }

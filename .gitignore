@@ -5,10 +5,7 @@ server/public
 vite.config.ts.*
 *.tar.gz
 
-# Environment Variables
-.env
-.env.*
-!.env.example
+
 
 # Security
 *.pem
@@ -22,3 +19,7 @@ vite.config.ts.*
 contracts/artifacts
 contracts/cache
 contracts/typechain-types
+# Environment
+.env
+.env.local
+.env.*

@@ -1,27 +1,36 @@
 import { create } from 'zustand';
+import { apiRequest } from './queryClient';
+import { BrowserProvider } from 'ethers';
+
+interface User {
+  id: string;
+  walletAddress: string;
+  usdcBalance: number;
+  x4pnBalance: number;
+  totalSpent: number;
+  totalEarnedX4pn: number;
+}
 
 interface WalletState {
   address: string | null;
+  user: User | null;
   isConnected: boolean;
   isConnecting: boolean;
   chainId: number | null;
   connect: () => Promise<void>;
-  disconnect: () => void;
+  disconnect: () => Promise<void>;
+  checkSession: () => Promise<void>;
 }
 
 declare global {
   interface Window {
-    ethereum?: {
-      isMetaMask?: boolean;
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-      on: (event: string, handler: (...args: unknown[]) => void) => void;
-      removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
-    };
+    ethereum?: any;
   }
 }
 
-export const useWallet = create<WalletState>((set) => ({
+export const useWallet = create<WalletState>((set, get) => ({
   address: null,
+  user: null,
   isConnected: false,
   isConnecting: false,
   chainId: null,
@@ -34,35 +43,80 @@ export const useWallet = create<WalletState>((set) => ({
     set({ isConnecting: true });
 
     try {
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
-      }) as string[];
+      // 1. Connect Wallet
+      const provider = new BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const address = accounts[0];
+      const network = await provider.getNetwork();
 
-      const chainId = await window.ethereum.request({
-        method: 'eth_chainId',
-      }) as string;
+      // 2. Get Nonce
+      const nonceRes = await apiRequest("GET", `/api/auth/nonce/${address}`);
+      const { nonce } = await nonceRes.json();
 
-      if (accounts.length > 0) {
-        set({
-          address: accounts[0],
-          isConnected: true,
-          isConnecting: false,
-          chainId: parseInt(chainId, 16),
-        });
-      }
+      // 3. Sign Message
+      const signer = await provider.getSigner();
+      const signature = await signer.signMessage(nonce);
+
+      // 4. Login
+      const loginRes = await apiRequest("POST", "/api/auth/login", { address, signature });
+      const { user } = await loginRes.json();
+
+      set({
+        address,
+        user,
+        isConnected: true,
+        isConnecting: false,
+        chainId: Number(network.chainId),
+      });
+
     } catch (error) {
+      console.error("Connection failed:", error);
       set({ isConnecting: false });
       throw error;
     }
   },
 
-  disconnect: () => {
+  disconnect: async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+    } catch (e) {
+      console.error("Logout failed:", e);
+    }
+
     set({
       address: null,
+      user: null,
       isConnected: false,
       chainId: null,
     });
   },
+
+  checkSession: async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const user = await res.json();
+        set({
+          address: user.walletAddress,
+          user,
+          isConnected: true
+        });
+
+        // Optionally sync chainId if window.ethereum exists
+        if (typeof window.ethereum !== 'undefined') {
+          try {
+            const provider = new BrowserProvider(window.ethereum);
+            const network = await provider.getNetwork();
+            set({ chainId: Number(network.chainId) });
+          } catch (e) {
+            console.warn("Could not sync chainId", e);
+          }
+        }
+      }
+    } catch (e) {
+      // Not logged in, valid state
+    }
+  }
 }));
 
 export function truncateAddress(address: string): string {
@@ -86,16 +140,15 @@ export function formatX4PN(amount: number): string {
   }).format(amount);
 }
 
-export const POLYGON_MUMBAI_CHAIN_ID = 80001;
-export const POLYGON_MAINNET_CHAIN_ID = 137;
+export const BASE_MAINNET_CHAIN_ID = 8453;
 
-export async function switchToPolygonMumbai(): Promise<void> {
+export async function switchToBase(): Promise<void> {
   if (!window.ethereum) return;
 
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: '0x13881' }],
+      params: [{ chainId: '0x2105' }],
     });
   } catch (switchError: unknown) {
     const error = switchError as { code: number };
@@ -104,15 +157,15 @@ export async function switchToPolygonMumbai(): Promise<void> {
         method: 'wallet_addEthereumChain',
         params: [
           {
-            chainId: '0x13881',
-            chainName: 'Polygon Mumbai Testnet',
+            chainId: '0x2105',
+            chainName: 'Base Mainnet',
             nativeCurrency: {
-              name: 'MATIC',
-              symbol: 'MATIC',
+              name: 'Ethereum',
+              symbol: 'ETH',
               decimals: 18,
             },
-            rpcUrls: ['https://rpc-mumbai.maticvigil.com/'],
-            blockExplorerUrls: ['https://mumbai.polygonscan.com/'],
+            rpcUrls: ['https://mainnet.base.org'],
+            blockExplorerUrls: ['https://basescan.org/'],
           },
         ],
       });

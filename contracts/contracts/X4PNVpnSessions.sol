@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 interface IX4PNToken {
     function mintRewards(address to, uint256 amount, uint256 sessionId) external;
@@ -17,6 +19,8 @@ interface IX4PNToken {
  */
 contract X4PNVpnSessions is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     IERC20 public immutable usdc;
     IX4PNToken public immutable x4pnToken;
@@ -190,25 +194,62 @@ contract X4PNVpnSessions is Ownable, ReentrancyGuard {
         Session storage session = activeSessions[msg.sender];
         require(session.isActive, "No active session");
         
+        _settleInternal(session, session.totalDuration + (block.timestamp - session.lastSettledTime));
+    }
+
+    /**
+     * @dev Settle session using an off-chain signature (x402 style)
+     * Allows Node/Platform to claim funds authorized by User
+     * Signature must sign: keccak256(abi.encodePacked(sessionId, totalAmount, totalDuration, address(this)))
+     */
+    function settleSessionWithSignature(
+        uint256 sessionId,
+        uint256 totalAmount,
+        uint256 totalDuration,
+        bytes calldata signature
+    ) external nonReentrant {
+        Session storage session = sessions[sessionId];
+        require(session.isActive, "Session not active");
+        require(totalAmount > session.totalPaid, "New amount must be greater");
+        require(totalDuration >= session.totalDuration, "Invalid duration");
+
+        // Verify Signature
+        bytes32 messageHash = keccak256(abi.encodePacked(sessionId, totalAmount, totalDuration, address(this)));
+        bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
+        
+        address signer = ethSignedMessageHash.recover(signature);
+        require(signer == session.user, "Invalid signature");
+
+        // Calculate delta
+        uint256 amountDelta = totalAmount - session.totalPaid;
+        
+        // Settle
+        _settleLogic(session, amountDelta, totalDuration);
+        
+        session.lastSettledTime = block.timestamp;
+    }
+
+    function _settleInternal(Session storage session, uint256 currentTotalDuration) internal {
         uint256 elapsed = block.timestamp - session.lastSettledTime;
         require(elapsed > 0, "Nothing to settle");
         
         uint256 cost = elapsed * session.ratePerSecond;
-        
-        // Cap cost to available balance
-        if (cost > userBalances[msg.sender]) {
-            cost = userBalances[msg.sender];
-            elapsed = cost / session.ratePerSecond;
+        if (cost > userBalances[session.user]) {
+            cost = userBalances[session.user];
         }
         
-        require(cost > 0, "Cost too small");
+        _settleLogic(session, cost, session.totalDuration + elapsed);
+    }
+
+    function _settleLogic(Session storage session, uint256 cost, uint256 newTotalDuration) internal {
+        require(userBalances[session.user] >= cost, "Insufficient user balance");
         
         // Calculate platform fee
         uint256 platformFee = (cost * platformFeeBps) / 10000;
         uint256 operatorPayment = cost - platformFee;
         
         // Update balances
-        userBalances[msg.sender] -= cost;
+        userBalances[session.user] -= cost;
         
         // Transfer to operator and platform
         usdc.safeTransfer(session.nodeOperator, operatorPayment);
@@ -217,25 +258,27 @@ contract X4PNVpnSessions is Ownable, ReentrancyGuard {
         }
         
         // Calculate and mint X4PN rewards
-        uint256 rewards = (cost * rewardRate) / 10**6; // Adjust for USDC decimals
+        uint256 rewards = (cost * rewardRate) / 10**6; 
         if (rewards > 0) {
-            x4pnToken.mintRewards(msg.sender, rewards, session.id);
+            x4pnToken.mintRewards(session.user, rewards, session.id);
         }
         
         // Update session data
-        session.lastSettledTime = block.timestamp;
         session.totalPaid += cost;
-        session.totalDuration += elapsed;
-        sessions[session.id] = session;
+        session.totalDuration = newTotalDuration;
         
+        sessions[session.id] = session;
+        if (session.isActive) {
+             activeSessions[session.user] = session;
+        }
+
         // Update operator stats
         nodeOperators[session.nodeOperator].totalEarned += operatorPayment;
         
-        emit SessionSettled(session.id, cost, elapsed, rewards);
+        emit SessionSettled(session.id, cost, newTotalDuration, rewards);
         
-        // Auto-end session if balance depleted
-        if (userBalances[msg.sender] == 0) {
-            _endSession(msg.sender);
+        if (userBalances[session.user] == 0) {
+            _endSession(session.user);
         }
     }
     
@@ -254,25 +297,7 @@ contract X4PNVpnSessions is Ownable, ReentrancyGuard {
                 cost = userBalances[msg.sender];
             }
             
-            if (cost > 0) {
-                uint256 platformFee = (cost * platformFeeBps) / 10000;
-                uint256 operatorPayment = cost - platformFee;
-                
-                userBalances[msg.sender] -= cost;
-                usdc.safeTransfer(session.nodeOperator, operatorPayment);
-                if (platformFee > 0) {
-                    usdc.safeTransfer(feeRecipient, platformFee);
-                }
-                
-                uint256 rewards = (cost * rewardRate) / 10**6;
-                if (rewards > 0) {
-                    x4pnToken.mintRewards(msg.sender, rewards, session.id);
-                }
-                
-                session.totalPaid += cost;
-                session.totalDuration += elapsed;
-                nodeOperators[session.nodeOperator].totalEarned += operatorPayment;
-            }
+            _settleLogic(session, cost, session.totalDuration + elapsed);
         }
         
         _endSession(msg.sender);

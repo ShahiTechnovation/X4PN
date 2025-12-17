@@ -1,6 +1,5 @@
 FROM node:20-bullseye-slim
 
-# Install WireGuard tools and iptables
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wireguard-tools \
     iptables \

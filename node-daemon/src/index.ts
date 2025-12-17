@@ -1,6 +1,7 @@
 import { PlatformClient } from "./platform-client";
 import { WireGuardService } from "./wireguard";
 import os from "os";
+import { ethers } from "ethers";
 
 const WG_INTERFACE = process.env.WG_INTERFACE || "wg0";
 const WG_PORT = parseInt(process.env.WG_PORT || "51820");
@@ -11,18 +12,11 @@ async function main() {
     console.log(`OS: ${os.platform()} ${os.release()}`);
 
     try {
-        // 1. Initialize Keys
-        // In production, these should be persisted to disk/env
-        let keys;
-        try {
-            keys = await WireGuardService.generateKeys();
-            console.log("🔑 Generated new Node Identity");
-            console.log(`   Public Key: ${keys.publicKey}`);
-        } catch (e) {
-            console.warn("⚠️  Could not generate WireGuard keys (WireGuard not installed?)");
-            console.warn("   Running in SIMULATION MODE");
-            return runSimulation();
-        }
+        // 1. Initialize WireGuard Keys (Kernel Mode)
+        console.log("🔒 Initializing WireGuard Kernel Interface...");
+        const keys = await WireGuardService.generateKeys();
+        console.log("🔑 Generated WireGuard Identity");
+        console.log(`   Public Key: ${keys.publicKey}`);
 
         // 2. Start WireGuard Service
         const wg = new WireGuardService({
@@ -43,12 +37,20 @@ async function main() {
         // 3. Connect to Platform
         console.log("📡 Connecting to Platform API...");
         const PLATFORM_URL = process.env.PLATFORM_URL || "http://localhost:5000";
-
-        // For prototype, we use placeholder IDs. In production these come from a config file or env
         const NODE_ID = process.env.NODE_ID || "node_123";
-        const OPERATOR_ADDRESS = process.env.OPERATOR_ADDRESS || "0x0000000000000000000000000000000000000000";
 
-        const platform = new PlatformClient(PLATFORM_URL, NODE_ID, OPERATOR_ADDRESS, async (data) => {
+        // Auth Setup
+        let privateKey = process.env.NODE_PRIVATE_KEY;
+        if (!privateKey) {
+            console.warn("⚠️  NODE_PRIVATE_KEY not found in env. Generating temporary key...");
+            const wallet = ethers.Wallet.createRandom();
+            privateKey = wallet.privateKey;
+            console.warn(`   Generated Private Key: ${privateKey}`);
+            console.warn(`   Operator Address: ${wallet.address}`);
+            console.warn("   Action: Register this address in the Platform Dashboard.");
+        }
+
+        const platform = new PlatformClient(PLATFORM_URL, NODE_ID, privateKey, async (data) => {
             console.log(`[Daemon] Adding peer for session ${data.sessionId}`);
 
             // In a real system, we would generate a unique IP or pull from a pool
@@ -99,10 +101,21 @@ function runSimulation() {
     // Simulate Platform Connection
     const PLATFORM_URL = process.env.PLATFORM_URL || "http://localhost:5000";
     const NODE_ID = process.env.NODE_ID || "node_sim_1";
-    const OPERATOR_ADDRESS = process.env.OPERATOR_ADDRESS || "0x0000000000000000000000000000000000000000";
+
+    let privateKey = process.env.NODE_PRIVATE_KEY;
+    if (!privateKey) {
+        console.warn("⚠️  NODE_PRIVATE_KEY not found. Generating temporary key...");
+        const wallet = ethers.Wallet.createRandom();
+        privateKey = wallet.privateKey;
+        console.warn(`   Operator Address: ${wallet.address}`);
+    }
 
     console.log(`[Sim] Connecting to ${PLATFORM_URL}...`);
-    const platform = new PlatformClient(PLATFORM_URL, NODE_ID, OPERATOR_ADDRESS);
+    const platform = new PlatformClient(PLATFORM_URL, NODE_ID, privateKey, async (data) => {
+        console.log(`[Sim] 📩 Received session request for user: ${data.userAddress}`);
+        console.log(`[Sim] 🟢 Mocking WireGuard peer addition...`);
+        console.log(`[Sim] ✅ Peer added (simulated).`);
+    });
 
     setInterval(() => {
         console.log("[Sim] Heartbeat sent. Active Peers: 0");

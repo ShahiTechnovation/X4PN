@@ -25,14 +25,14 @@ cd contracts
 npm install
 ```
 
+
 2. Create `.env` file:
 ```env
 DEPLOYER_PRIVATE_KEY=your_private_key_here
-MUMBAI_RPC_URL=https://rpc-mumbai.maticvigil.com
-POLYGON_RPC_URL=https://polygon-rpc.com
-AMOY_RPC_URL=https://rpc-amoy.polygon.technology
-POLYGONSCAN_API_KEY=your_api_key_here
-USDC_ADDRESS=0x0FA8781a83E46826621b3BC094Ea2A0212e71B23
+BASE_RPC_URL=https://mainnet.base.org
+BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+BASESCAN_API_KEY=your_api_key_here
+USDC_ADDRESS=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 ```
 
 3. Compile contracts:
@@ -48,19 +48,14 @@ npm run node  # Start local node in one terminal
 npm run deploy:local  # Deploy in another terminal
 ```
 
-### Polygon Mumbai Testnet
+### Base Sepolia Testnet
 ```bash
-npm run deploy:mumbai
+npx hardhat run scripts/deploy.js --network base_sepolia
 ```
 
-### Polygon Amoy Testnet (newer)
+### Base Mainnet
 ```bash
-npm run deploy:amoy
-```
-
-### Polygon Mainnet
-```bash
-npm run deploy:mainnet
+npx hardhat run scripts/deploy.js --network base
 ```
 
 ## Contract Addresses
@@ -69,8 +64,9 @@ After deployment, save these addresses:
 
 | Contract | Network | Address |
 |----------|---------|---------|
-| X4PNToken | Mumbai | TBD |
-| X4PNVpnSessions | Mumbai | TBD |
+| X4PNToken | Base | TBD |
+| X4PNVpnSessions | Base | TBD |
+
 
 ## Usage Flow
 

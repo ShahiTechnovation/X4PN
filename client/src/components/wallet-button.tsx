@@ -61,7 +61,7 @@ export function WalletButton() {
         <Button variant="outline" className="gap-2" data-testid="button-wallet-menu">
           <div className="h-2 w-2 rounded-full bg-status-online animate-pulse" />
           <span className="font-mono text-sm">{truncateAddress(address!)}</span>
-          <Badge variant="secondary" className="text-xs">Polygon</Badge>
+          <Badge variant="secondary" className="text-xs">Base</Badge>
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -77,7 +77,7 @@ export function WalletButton() {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <a
-            href={`https://mumbai.polygonscan.com/address/${address}`}
+            href={`https://basescan.org/address/${address}`}
             target="_blank"
             rel="noopener noreferrer"
             data-testid="link-view-explorer"

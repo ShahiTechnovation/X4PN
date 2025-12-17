@@ -10,6 +10,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Server, DollarSign, Coins, Users, Wallet } from "lucide-react";
 import { formatUSDC, formatX4PN } from "@/lib/wallet";
 import type { Node } from "@shared/schema";
+import { registerAsNodeOperator } from "@/lib/contracts";
+import { ethers } from "ethers";
 
 export default function Nodes() {
   const { address, isConnected } = useWallet();
@@ -31,6 +33,27 @@ export default function Nodes() {
       port: number;
       ratePerMinute: number;
     }) => {
+      // 1. Register as Operator on Blockchain
+      if (!window.ethereum) throw new Error("Wallet not connected");
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      try {
+        const tx = await registerAsNodeOperator(signer);
+        await tx.wait();
+
+        toast({
+          title: "Blockchain Registration",
+          description: "Successfully registered as operator on-chain.",
+        });
+      } catch (error: any) {
+        // If already registered, we might want to proceed or warn
+        if (!error.message.includes("Already registered")) {
+          console.error("Blockchain registration failed:", error);
+        }
+      }
+
+      // 2. Register Node in Backend Database
       await apiRequest("POST", "/api/nodes/register", {
         ...data,
         operatorAddress: address,
@@ -82,9 +105,9 @@ export default function Nodes() {
 
   const totalNodes = nodes.length;
   const activeNodes = nodes.filter((n) => n.isActive).length;
-  const totalEarningsUsdc = nodes.reduce((sum, n) => sum + n.totalEarnedUsdc, 0);
-  const totalEarningsX4pn = nodes.reduce((sum, n) => sum + n.totalEarnedX4pn, 0);
-  const totalActiveUsers = nodes.reduce((sum, n) => sum + n.activeUsers, 0);
+  const totalEarningsUsdc = nodes.reduce((sum, n) => sum + (n.totalEarnedUsdc || 0), 0);
+  const totalEarningsX4pn = nodes.reduce((sum, n) => sum + (n.totalEarnedX4pn || 0), 0);
+  const totalActiveUsers = nodes.reduce((sum, n) => sum + (n.activeUsers || 0), 0);
 
   return (
     <div className="p-6 space-y-8" data-testid="page-nodes">

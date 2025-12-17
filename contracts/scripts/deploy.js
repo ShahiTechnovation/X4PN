@@ -2,14 +2,28 @@ const { ethers } = require("hardhat");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  
+
   console.log("Deploying contracts with account:", deployer.address);
   console.log("Account balance:", (await deployer.provider.getBalance(deployer.address)).toString());
 
   // USDC address on Polygon Mumbai testnet
   // For mainnet, use the actual USDC contract address
-  const USDC_ADDRESS = process.env.USDC_ADDRESS || "0x0FA8781a83E46826621b3BC094Ea2A0212e71B23";
-  
+  // Determine USDC address based on network
+  let USDC_ADDRESS = process.env.USDC_ADDRESS;
+
+  if (!USDC_ADDRESS) {
+    const network = hre.network.name;
+    if (network === "base") {
+      USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base Mainnet USDC
+    } else if (network === "base_sepolia") {
+      USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia USDC
+    } else {
+      USDC_ADDRESS = "0x0FA8781a83E46826621b3BC094Ea2A0212e71B23"; // Fallback (Mumbai)
+    }
+  }
+
+  console.log("Using USDC Address:", USDC_ADDRESS);
+
   // Deploy X4PNToken
   console.log("\nDeploying X4PNToken...");
   const X4PNToken = await ethers.getContractFactory("X4PNToken");
@@ -32,23 +46,28 @@ async function main() {
 
   // Add VpnSessions contract as minter for X4PN token
   console.log("\nAdding VpnSessions as minter...");
-  const addMinterTx = await x4pnToken.addMinter(vpnSessionsAddress);
-  await addMinterTx.wait();
-  console.log("VpnSessions added as minter");
+  try {
+    const addMinterTx = await x4pnToken.addMinter(vpnSessionsAddress);
+    await addMinterTx.wait();
+    console.log("VpnSessions added as minter");
+  } catch (error) {
+    console.warn("Failed to add minter (are you owner?):", error.message);
+  }
 
   console.log("\n========================================");
   console.log("DEPLOYMENT COMPLETE");
   console.log("========================================");
+  console.log("Network:", hre.network.name);
   console.log("X4PNToken:", x4pnTokenAddress);
   console.log("X4PNVpnSessions:", vpnSessionsAddress);
-  console.log("USDC (testnet):", USDC_ADDRESS);
+  console.log("USDC:", USDC_ADDRESS);
   console.log("Fee Recipient:", deployer.address);
   console.log("========================================");
 
   // Verification instructions
-  console.log("\nTo verify contracts on PolygonScan:");
-  console.log(`npx hardhat verify --network polygon_mumbai ${x4pnTokenAddress}`);
-  console.log(`npx hardhat verify --network polygon_mumbai ${vpnSessionsAddress} "${USDC_ADDRESS}" "${x4pnTokenAddress}" "${deployer.address}"`);
+  console.log("\nTo verify locally (example):");
+  console.log(`npx hardhat verify --network ${hre.network.name} ${x4pnTokenAddress}`);
+  console.log(`npx hardhat verify --network ${hre.network.name} ${vpnSessionsAddress} "${USDC_ADDRESS}" "${x4pnTokenAddress}" "${deployer.address}"`);
 }
 
 main()

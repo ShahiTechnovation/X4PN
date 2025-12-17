@@ -7,7 +7,7 @@ import { BlockchainWithdrawModal } from "@/components/blockchain-withdraw-modal"
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/lib/wallet";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   DollarSign,
   Coins,
@@ -17,9 +17,9 @@ import {
   ArrowDownToLine,
 } from "lucide-react";
 import { ethers } from "ethers";
-import { 
-  getUserBalance, 
-  getX4PNBalance 
+import {
+  getUserBalance,
+  getX4PNBalance
 } from "@/lib/contracts";
 import type { Session, Node, User } from "@shared/schema";
 
@@ -34,18 +34,17 @@ export default function BlockchainDashboard() {
   // Fetch blockchain balances
   const fetchBalances = async () => {
     if (!isConnected || !address || !window.ethereum) return;
-    
+
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      
+
       // Get USDC balance in VPN contract
-      const usdcBalanceWei = await getUserBalance(address, signer);
+      const usdcBalanceWei = await getUserBalance(address, provider as any);
       const usdcBalanceFormatted = parseFloat(ethers.formatUnits(usdcBalanceWei, 6));
       setUsdcBalance(usdcBalanceFormatted);
-      
+
       // Get X4PN token balance
-      const x4pnBalanceWei = await getX4PNBalance(signer, address);
+      const x4pnBalanceWei = await getX4PNBalance(address, provider as any);
       const x4pnBalanceFormatted = parseFloat(ethers.formatEther(x4pnBalanceWei));
       setX4pnBalance(x4pnBalanceFormatted);
     } catch (error) {
@@ -62,7 +61,7 @@ export default function BlockchainDashboard() {
   useEffect(() => {
     if (isConnected && address) {
       fetchBalances();
-      
+
       // Refresh balances every 30 seconds
       const interval = setInterval(fetchBalances, 30000);
       return () => clearInterval(interval);
@@ -130,8 +129,25 @@ export default function BlockchainDashboard() {
     fetchBalances();
   };
 
-  const handleDepositSuccess = () => {
-    fetchBalances();
+  const handleDepositSuccess = async (amount: number) => {
+    try {
+      if (address) {
+        // Sync deposit with backend database for session balance
+        await apiRequest("POST", "/api/deposits", {
+          userAddress: address,
+          amount,
+          token: "usdc"
+        });
+      }
+      fetchBalances();
+    } catch (error) {
+      console.error("Failed to sync deposit with backend", error);
+      toast({
+        title: "Sync Warning",
+        description: "Deposit successful on-chain but failed to update backend balance.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleWithdrawSuccess = () => {
@@ -267,7 +283,7 @@ function StatCard({
   testId?: string;
 }) {
   return (
-    <div 
+    <div
       className="rounded-lg border bg-card text-card-foreground shadow-sm p-6"
       data-testid={testId}
     >

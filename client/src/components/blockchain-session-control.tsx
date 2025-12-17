@@ -12,15 +12,15 @@ import {
   Coins,
   ArrowUpDown,
   Loader2,
+  Download,
 } from "lucide-react";
 import { formatUSDC, formatX4PN } from "@/lib/wallet";
 import { useWallet } from "@/lib/wallet";
 import { ethers } from "ethers";
-import { 
+import {
   startVPNSession,
   settleVPNSession,
-  endVPNSession,
-  getActiveSession
+  endVPNSession
 } from "@/lib/contracts";
 import { useToast } from "@/hooks/use-toast";
 import type { Session, Node } from "@shared/schema";
@@ -76,17 +76,17 @@ export function BlockchainSessionControl({
   };
 
   const estimatedRemainingTime =
-    session?.ratePerSecond && userBalance > 0
+    session && session.ratePerSecond && userBalance > 0
       ? Math.floor(userBalance / session.ratePerSecond)
       : 0;
 
-  const progressPercent = session?.isActive
+  const progressPercent = session?.isActive && userBalance > 0
     ? Math.min((currentCost / userBalance) * 100, 100)
     : 0;
 
   const handleConnect = async () => {
     if (!address || !node) return;
-    
+
     if (!window.ethereum) {
       toast({
         title: "Wallet Error",
@@ -98,31 +98,29 @@ export function BlockchainSessionControl({
 
     try {
       setIsProcessing(true);
-      
-      // Initialize provider and signer
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      
-      // Convert rate to proper format (USDC has 6 decimals)
-      const ratePerSecond = ethers.parseUnits((node.ratePerMinute / 60).toString(), 6);
-      
-      // Start VPN session
+
+      // Calculate rate safely
+      const ratePerMinuteWei = ethers.parseUnits(node.ratePerMinute.toString(), 6);
+      const ratePerSecond = ratePerMinuteWei / BigInt(60);
+
       const tx = await startVPNSession(node.operatorAddress, ratePerSecond, signer);
-      
+
       toast({
         title: "Transaction Sent",
         description: "Starting VPN session... Please wait for confirmation",
       });
-      
-      // Wait for transaction confirmation
+
       const receipt = await tx.wait();
-      
-      if (receipt.status === 1) {
+
+      if (receipt && receipt.status === 1) {
         toast({
           title: "VPN Connected",
           description: "Your secure connection is now active",
         });
-        
+
         if (onSessionChange) {
           onSessionChange();
         }
@@ -143,7 +141,7 @@ export function BlockchainSessionControl({
 
   const handleDisconnect = async () => {
     if (!address) return;
-    
+
     if (!window.ethereum) {
       toast({
         title: "Wallet Error",
@@ -155,36 +153,32 @@ export function BlockchainSessionControl({
 
     try {
       setIsProcessing(true);
-      
-      // Initialize provider and signer
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      
-      // Settle session first
+
       try {
         const settleTx = await settleVPNSession(signer);
         await settleTx.wait();
       } catch (settleErr: any) {
         console.warn("Settlement failed:", settleErr.message);
       }
-      
-      // End VPN session
+
       const tx = await endVPNSession(signer);
-      
+
       toast({
         title: "Transaction Sent",
         description: "Ending VPN session... Please wait for confirmation",
       });
-      
-      // Wait for transaction confirmation
+
       const receipt = await tx.wait();
-      
-      if (receipt.status === 1) {
+
+      if (receipt && receipt.status === 1) {
         toast({
           title: "VPN Disconnected",
           description: "Your session has ended",
         });
-        
+
         if (onSessionChange) {
           onSessionChange();
         }
@@ -286,6 +280,16 @@ export function BlockchainSessionControl({
               <ArrowUpDown className="h-4 w-4" />
               <span>Rate: {formatUSDC((session.ratePerSecond || 0) * 60)}/min</span>
             </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => window.open(`/api/sessions/${session.id}/config`, '_blank')}
+            >
+              <Download className="h-4 w-4" />
+              Download WireGuard Config
+            </Button>
 
             <Button
               variant="destructive"

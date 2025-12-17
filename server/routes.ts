@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
+import { ethers } from "ethers";
+import { requireAuth } from "./middleware/auth";
 import {
   startSessionRequestSchema,
   settleSessionRequestSchema,
@@ -13,20 +15,21 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // User endpoints
-  app.get("/api/users/:address", async (req, res) => {
+  // User endpoints (Protected)
+  app.get("/api/users/:address", requireAuth, async (req, res) => {
     try {
       const { address } = req.params;
+
+      // Authorization Check
+      if (req.session.walletAddress?.toLowerCase() !== address.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden. You can only view your own profile." });
+      }
+
       let user = await storage.getUserByWalletAddress(address);
 
       if (!user) {
-        user = await storage.createUser({
-          walletAddress: address,
-          usdcBalance: 100,
-          x4pnBalance: 500,
-          totalSpent: 0,
-          totalEarnedX4pn: 0,
-        });
+        // Should have been created at login, but just in case
+        return res.status(404).json({ error: "User not found" });
       }
 
       res.json(user);
@@ -36,8 +39,8 @@ export async function registerRoutes(
     }
   });
 
-  // Deposit endpoint
-  app.post("/api/deposits", async (req, res) => {
+  // Deposit endpoint (Protected)
+  app.post("/api/deposits", requireAuth, async (req, res) => {
     try {
       const parsed = depositRequestSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -46,15 +49,14 @@ export async function registerRoutes(
 
       const { userAddress, amount } = parsed.data;
 
+      // Auth Check
+      if (req.session.walletAddress?.toLowerCase() !== userAddress.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
       let user = await storage.getUserByWalletAddress(userAddress);
       if (!user) {
-        user = await storage.createUser({
-          walletAddress: userAddress,
-          usdcBalance: 0,
-          x4pnBalance: 0,
-          totalSpent: 0,
-          totalEarnedX4pn: 0,
-        });
+        return res.status(404).json({ error: "User not found" });
       }
 
       const updatedUser = await storage.updateUserBalance(userAddress, amount, 0);
@@ -75,8 +77,8 @@ export async function registerRoutes(
     }
   });
 
-  // Withdraw endpoint
-  app.post("/api/withdrawals", async (req, res) => {
+  // Withdraw endpoint (Protected)
+  app.post("/api/withdrawals", requireAuth, async (req, res) => {
     try {
       const parsed = withdrawRequestSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -84,6 +86,11 @@ export async function registerRoutes(
       }
 
       const { userAddress, amount, token } = parsed.data;
+
+      // Auth Check
+      if (req.session.walletAddress?.toLowerCase() !== userAddress.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
 
       const user = await storage.getUserByWalletAddress(userAddress);
       if (!user) {
@@ -115,7 +122,7 @@ export async function registerRoutes(
     }
   });
 
-  // Node endpoints
+  // Node endpoints (Public Read, Protected Write)
   app.get("/api/nodes", async (req, res) => {
     try {
       const nodes = await storage.getActiveNodes();
@@ -151,11 +158,16 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/nodes/register", async (req, res) => {
+  app.post("/api/nodes/register", requireAuth, async (req, res) => {
     try {
       const parsed = registerNodeRequestSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.message });
+      }
+
+      // Ensure operator address matches logged in user
+      if (parsed.data.operatorAddress.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Operator address must match logged in user" });
       }
 
       const node = await storage.createNode({
@@ -175,16 +187,19 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/nodes/:id", async (req, res) => {
+  app.patch("/api/nodes/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
 
-      const node = await storage.updateNode(id, updates);
-      if (!node) {
-        return res.status(404).json({ error: "Node not found" });
+      const existingNode = await storage.getNode(id);
+      if (!existingNode) return res.status(404).json({ error: "Node not found" });
+
+      if (existingNode.operatorAddress.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Unauthorized" });
       }
 
+      const node = await storage.updateNode(id, updates);
       res.json(node);
     } catch (error) {
       console.error("Error updating node:", error);
@@ -192,10 +207,14 @@ export async function registerRoutes(
     }
   });
 
-  // Session endpoints
-  app.get("/api/sessions/:address", async (req, res) => {
+  // Session endpoints (Protected)
+  app.get("/api/sessions/:address", requireAuth, async (req, res) => {
     try {
       const { address } = req.params;
+      if (address.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
       const sessions = await storage.getSessionsByUser(address);
       res.json(sessions);
     } catch (error) {
@@ -204,9 +223,12 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/sessions/active/:address", async (req, res) => {
+  app.get("/api/sessions/active/:address", requireAuth, async (req, res) => {
     try {
       const { address } = req.params;
+      if (address.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       const session = await storage.getActiveSessionByUser(address);
       res.json(session || null);
     } catch (error) {
@@ -215,7 +237,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/sessions/start", async (req, res) => {
+  app.post("/api/sessions/start", requireAuth, async (req, res) => {
     try {
       const parsed = startSessionRequestSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -223,6 +245,11 @@ export async function registerRoutes(
       }
 
       const { nodeId, userAddress } = parsed.data;
+
+      // Auth Check
+      if (userAddress.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
 
       // Check if user has active session
       const existingSession = await storage.getActiveSessionByUser(userAddress);
@@ -243,13 +270,8 @@ export async function registerRoutes(
       // Get or create user
       let user = await storage.getUserByWalletAddress(userAddress);
       if (!user) {
-        user = await storage.createUser({
-          walletAddress: userAddress,
-          usdcBalance: 100,
-          x4pnBalance: 500,
-          totalSpent: 0,
-          totalEarnedX4pn: 0,
-        });
+        // Should exist via login
+        return res.status(404).json({ error: "User not found" });
       }
 
       if (user.usdcBalance <= 0) {
@@ -295,18 +317,22 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/sessions/settle", async (req, res) => {
+  app.post("/api/sessions/settle", requireAuth, async (req, res) => {
     try {
       const parsed = settleSessionRequestSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.message });
       }
 
-      const { sessionId } = parsed.data;
+      const { sessionId, signature, totalCost: signedTotalCost, totalDuration: signedTotalDuration } = parsed.data;
 
       const session = await storage.getSession(sessionId);
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
+      }
+
+      if (session.userAddress.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
       }
 
       if (!session.isActive) {
@@ -318,7 +344,7 @@ export async function registerRoutes(
       const lastSettled = new Date(session.lastSettledAt);
       const timeElapsed = Math.max(0, Math.floor((now.getTime() - lastSettled.getTime()) / 1000));
 
-      if (timeElapsed <= 0) {
+      if (timeElapsed <= 0 && !signature) {
         return res.status(400).json({ error: "Nothing to settle yet" });
       }
 
@@ -332,6 +358,28 @@ export async function registerRoutes(
       let cost = session.ratePerSecond * timeElapsed;
       if (cost > user.usdcBalance) {
         cost = Math.max(0, user.usdcBalance);
+      }
+
+      // Signature Verification (x402)
+      if (signature && signedTotalCost !== undefined && signedTotalDuration !== undefined) {
+        try {
+          const CONTRACT_ADDRESS = process.env.VPN_SESSIONS_ADDRESS || "0x0000000000000000000000000000000000000000"; // Mock if not set
+          const messageHash = ethers.solidityPackedKeccak256(
+            ["uint256", "uint256", "uint256", "address"],
+            [session.sessionId, signedTotalCost, signedTotalDuration, CONTRACT_ADDRESS]
+          );
+          const messageBytes = ethers.getBytes(messageHash);
+          const recoveredAddress = ethers.verifyMessage(messageBytes, signature);
+
+          if (recoveredAddress.toLowerCase() !== session.userAddress.toLowerCase()) {
+            return res.status(400).json({ error: "Invalid payment signature" });
+          }
+
+          console.log(`[Settlement] Verified valid signature for session ${session.sessionId}`);
+        } catch (e) {
+          console.error("Signature verification failed", e);
+          return res.status(400).json({ error: "Signature verification failed" });
+        }
       }
 
       if (cost <= 0) {
@@ -368,13 +416,21 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/sessions/end", async (req, res) => {
+  app.post("/api/sessions/end", requireAuth, async (req, res) => {
     try {
       const { sessionId } = req.body;
 
       if (!sessionId) {
         return res.status(400).json({ error: "Session ID required" });
       }
+
+      const sessionToCheck = await storage.getSession(sessionId);
+      if (!sessionToCheck) return res.status(404).json({ error: "Not Found" });
+
+      if (sessionToCheck.userAddress.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
 
       const session = await storage.endSession(sessionId);
       if (!session) {
@@ -389,9 +445,16 @@ export async function registerRoutes(
   });
 
   // Transaction endpoints
-  app.get("/api/transactions/:userId", async (req, res) => {
+  app.get("/api/transactions/:userId", requireAuth, async (req, res) => {
     try {
       const { userId } = req.params;
+
+      // Since userId is internal ID, we need to check if it belongs to logged in user.
+      const user = await storage.getUser(userId);
+      if (!user || user.walletAddress.toLowerCase() !== req.session.walletAddress?.toLowerCase()) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
       const transactions = await storage.getTransactionsByUser(userId);
       res.json(transactions);
     } catch (error) {
@@ -400,7 +463,7 @@ export async function registerRoutes(
     }
   });
 
-  // Stats endpoint
+  // Stats endpoint (Public)
   app.get("/api/stats", async (req, res) => {
     try {
       const nodes = await storage.getAllNodes();

@@ -5,15 +5,15 @@ import { CONFIG } from './config';
 
 // Contract addresses
 export const CONTRACT_ADDRESSES = {
-  X4PN_TOKEN: x4pnToken.networks.polygon.address,
-  VPN_SESSIONS: "0x148466D329C9E1B502fd41A65a073b39b3D43751", // Updated address
-  // USDC contract address on Polygon Mainnet (Native USDC)
-  USDC: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+  X4PN_TOKEN: "0xd84612a360359cF85E991A01dEAbB3dc8ab121F8", // Base Mainnet
+  VPN_SESSIONS: "0xDFcb0654919A4AE22eCfF196cd015F156053fd6D", // Base Mainnet
+  // USDC contract address on Base Mainnet
+  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 };
 
 // Contract ABIs
 export const CONTRACT_ABIS = {
-  X4PN_TOKEN: x4pnToken.abi,
+  X4PN_TOKEN: x4pnToken,
   VPN_SESSIONS: x4pnVpnSessions,
   USDC: [
     "function balanceOf(address owner) view returns (uint256)",
@@ -41,10 +41,10 @@ export function getUSDCContract(signer: ethers.Signer) {
 // Retry function for handling RPC errors with multiple endpoints
 export async function executeWithRpcFallback<T>(
   fn: (provider: ethers.JsonRpcProvider) => Promise<T>,
-  rpcEndpoints: string[] = CONFIG.FALLBACK_RPC_ENDPOINTS.polygon
+  rpcEndpoints: string[] = CONFIG.FALLBACK_RPC_ENDPOINTS.base
 ): Promise<T> {
   let lastError: any;
-  
+
   // Try each RPC endpoint in order
   for (let i = 0; i < rpcEndpoints.length; i++) {
     try {
@@ -56,7 +56,7 @@ export async function executeWithRpcFallback<T>(
     } catch (error: any) {
       lastError = error;
       console.warn(`RPC endpoint ${rpcEndpoints[i]} failed:`, error.message);
-      
+
       // If this is likely a temporary error, continue to next endpoint
       if (isTemporaryRpcError(error)) {
         continue;
@@ -66,22 +66,22 @@ export async function executeWithRpcFallback<T>(
       }
     }
   }
-  
+
   throw lastError;
 }
 
 function isTemporaryRpcError(error: any): boolean {
   // Check for common temporary RPC errors
-  return error.code === -32002 || 
-         error.code === -32005 || 
-         error.code === 429 || 
-         (error.message && (
-           error.message.includes("RPC endpoint returned too many errors") ||
-           error.message.includes("rate limit") ||
-           error.message.includes("timeout") ||
-           error.message.includes("network error") ||
-           error.message.includes("connection refused")
-         ));
+  return error.code === -32002 ||
+    error.code === -32005 ||
+    error.code === 429 ||
+    (error.message && (
+      error.message.includes("RPC endpoint returned too many errors") ||
+      error.message.includes("rate limit") ||
+      error.message.includes("timeout") ||
+      error.message.includes("network error") ||
+      error.message.includes("connection refused")
+    ));
 }
 
 // Retry function for handling RPC errors with backoff
@@ -91,18 +91,18 @@ export async function retryWithBackoff<T>(
   baseDelay: number = 1000
 ): Promise<T> {
   let lastError: any;
-  
+
   for (let i = 0; i <= maxRetries; i++) {
     try {
       return await fn();
     } catch (error: any) {
       lastError = error;
-      
+
       // If this is the last retry, throw the error
       if (i === maxRetries) {
         throw error;
       }
-      
+
       // Check if this is an RPC error that we should retry
       if (isTemporaryRpcError(error)) {
         const delay = baseDelay * Math.pow(2, i) + Math.random() * 1000;
@@ -114,7 +114,7 @@ export async function retryWithBackoff<T>(
       }
     }
   }
-  
+
   throw lastError;
 }
 

@@ -85,6 +85,10 @@ export const startSessionRequestSchema = z.object({
 
 export const settleSessionRequestSchema = z.object({
   sessionId: z.string(),
+  chainSessionId: z.number().optional(),
+  totalCost: z.number().optional(),
+  totalDuration: z.number().optional(),
+  signature: z.string().optional(),
 });
 
 export const depositRequestSchema = z.object({

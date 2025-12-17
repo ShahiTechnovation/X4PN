@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useTheme } from "@/components/theme-provider";
-import { useWallet, switchToPolygonMumbai, POLYGON_MUMBAI_CHAIN_ID } from "@/lib/wallet";
+import { useWallet, switchToBase, BASE_MAINNET_CHAIN_ID } from "@/lib/wallet";
 import { useToast } from "@/hooks/use-toast";
 import {
   Settings as SettingsIcon,
@@ -26,10 +26,10 @@ export default function Settings() {
 
   const handleSwitchNetwork = async () => {
     try {
-      await switchToPolygonMumbai();
+      await switchToBase();
       toast({
         title: "Network Switched",
-        description: "Connected to Polygon Mumbai Testnet",
+        description: "Connected to Base Mainnet",
       });
     } catch (error) {
       toast({
@@ -85,10 +85,8 @@ export default function Settings() {
               <div>
                 <p className="font-medium">Network</p>
                 <p className="text-sm text-muted-foreground">
-                  {chainId === POLYGON_MUMBAI_CHAIN_ID
-                    ? "Polygon Mumbai Testnet"
-                    : chainId === 137
-                    ? "Polygon Mainnet"
+                  {chainId === BASE_MAINNET_CHAIN_ID
+                    ? "Base Mainnet"
                     : "Unknown Network"}
                 </p>
               </div>
@@ -99,27 +97,8 @@ export default function Settings() {
                 data-testid="button-switch-network"
               >
                 <Globe className="h-4 w-4 mr-2" />
-                Switch to Mumbai
+                Switch to Base
               </Button>
-            </div>
-
-            <div className="p-4 rounded-md bg-muted/50">
-              <h4 className="font-medium mb-2">Get Testnet Tokens</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                You need testnet MATIC and USDC to use the VPN on Mumbai
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <a
-                    href="https://faucet.polygon.technology/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    MATIC Faucet
-                  </a>
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
