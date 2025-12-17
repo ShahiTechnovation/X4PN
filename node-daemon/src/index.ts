@@ -1,60 +1,80 @@
-import { exec } from "child_process";
-import { promisify } from "util";
-import fs from "fs/promises";
-import path from "path";
-
-const execAsync = promisify(exec);
+import { WireGuardService } from "./wireguard";
+import os from "os";
 
 const WG_INTERFACE = process.env.WG_INTERFACE || "wg0";
 const WG_PORT = parseInt(process.env.WG_PORT || "51820");
+const WG_IP = process.env.WG_IP || "10.8.0.1/24";
 
-async function checkWireGuard() {
+async function main() {
+    console.log("🚀 Starting X4PN Node Daemon...");
+    console.log(`OS: ${os.platform()} ${os.release()}`);
+
     try {
-        await execAsync("wg --help");
-        console.log("✅ WireGuard tools installed");
+        // 1. Initialize Keys
+        // In production, these should be persisted to disk/env
+        let keys;
+        try {
+            keys = await WireGuardService.generateKeys();
+            console.log("🔑 Generated new Node Identity");
+            console.log(`   Public Key: ${keys.publicKey}`);
+        } catch (e) {
+            console.warn("⚠️  Could not generate WireGuard keys (WireGuard not installed?)");
+            console.warn("   Running in SIMULATION MODE");
+            return runSimulation();
+        }
+
+        // 2. Start WireGuard Service
+        const wg = new WireGuardService({
+            interfaceName: WG_INTERFACE,
+            port: WG_PORT,
+            privateKey: keys.privateKey,
+            address: WG_IP
+        });
+
+        try {
+            await wg.up();
+        } catch (e) {
+            console.error("❌ Failed to initialize network interface. Are you root?");
+            console.error(e);
+            process.exit(1);
+        }
+
+        // 3. Connect to Platform (Placeholder)
+        console.log("📡 Connecting to Platform API...");
+
+        // 4. Teardown on exit
+        const stop = async () => {
+            console.log("\nStopping Node...");
+            await wg.down();
+            process.exit(0);
+        };
+        process.on("SIGINT", stop);
+        process.on("SIGTERM", stop);
+
+        // Keep alive
+        setInterval(async () => {
+            try {
+                const stats = await wg.getStats();
+                console.log(`[Heartbeat] Active Peers: ${stats.length}`);
+            } catch (e) {
+                // Ignore errors in loop
+            }
+        }, 10000);
+
     } catch (error) {
-        console.error("❌ WireGuard tools not found. Are you running in the Docker container?");
+        console.error("Fatal Error:", error);
         process.exit(1);
     }
 }
 
-async function generateKeys() {
-    const { stdout: privateKey } = await execAsync("wg genkey");
-    const { stdout: publicKey } = await execAsync(`echo "${privateKey.trim()}" | wg pubkey`);
-    return {
-        privateKey: privateKey.trim(),
-        publicKey: publicKey.trim()
-    };
-}
+function runSimulation() {
+    console.log("------------ SIMULATION MODE ------------");
+    console.log("Real WireGuard interfaces require Linux kernel modules.");
+    console.log("Simulating Daemon behavior for development...");
 
-async function main() {
-    console.log("🚀 Starting X4PN Node Daemon...");
-
-    await checkWireGuard();
-
-    const configPath = `/etc/wireguard/${WG_INTERFACE}.conf`;
-
-    // 1. Generate Identity
-    console.log("Generating Node Identity...");
-    const keys = await generateKeys();
-    console.log(`Public Key: ${keys.publicKey}`);
-
-    // 2. Setup Interface (Mocking implementation for prototype)
-    console.log(`Initializing WireGuard interface ${WG_INTERFACE} on port ${WG_PORT}...`);
-
-    // In a real implementation, we would write the wg0.conf file and bring up the interface
-    // await execAsync(`wg-quick up ${WG_INTERFACE}`);
-
-    console.log("📡 Connecting to Platform API...");
-    // Connect to the main platform to register execution
-    // const socket = io(PROCESS.ENV.PLATFORM_URL);
-
-    console.log("✅ Node Daemon Running. Waiting for sessions...");
-
-    // Keep alive
     setInterval(() => {
-        // Heartbeat
-    }, 10000);
+        console.log("[Sim] Heartbeat sent. Active Peers: 0");
+    }, 5000);
 }
 
 main().catch(console.error);
