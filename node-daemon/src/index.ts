@@ -54,16 +54,18 @@ async function main() {
         const stop = async () => {
             console.log("\nStopping Node...");
             await wg.down();
+            // Platform client disconnect logic (handled by process exit usually)
             process.exit(0);
         };
         process.on("SIGINT", stop);
         process.on("SIGTERM", stop);
 
-        // Keep alive
+        // Keep alive & Heartbeat
         setInterval(async () => {
             try {
                 const stats = await wg.getStats();
                 console.log(`[Heartbeat] Active Peers: ${stats.length}`);
+                // TODO: Send heartbeat to platform via platform.socket.emit(...)
             } catch (e) {
                 // Ignore errors in loop
             }
@@ -79,6 +81,14 @@ function runSimulation() {
     console.log("------------ SIMULATION MODE ------------");
     console.log("Real WireGuard interfaces require Linux kernel modules.");
     console.log("Simulating Daemon behavior for development...");
+
+    // Simulate Platform Connection
+    const PLATFORM_URL = process.env.PLATFORM_URL || "http://localhost:5000";
+    const NODE_ID = process.env.NODE_ID || "node_sim_1";
+    const OPERATOR_ADDRESS = process.env.OPERATOR_ADDRESS || "0x0000000000000000000000000000000000000000";
+
+    console.log(`[Sim] Connecting to ${PLATFORM_URL}...`);
+    const platform = new PlatformClient(PLATFORM_URL, NODE_ID, OPERATOR_ADDRESS);
 
     setInterval(() => {
         console.log("[Sim] Heartbeat sent. Active Peers: 0");
