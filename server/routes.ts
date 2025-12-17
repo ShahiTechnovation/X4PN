@@ -275,6 +275,19 @@ export async function registerRoutes(
         status: "active",
       });
 
+      // Emit event to Node Daemon via Socket.IO
+      const io = app.get("io");
+      if (io) {
+        io.to(`node:${node.id}`).emit("session:start", {
+          sessionId: session.id,
+          userAddress: user.walletAddress,
+          nodeId: node.id
+        });
+        console.log(`[API] Emitted session:start to node:${node.id}`);
+      } else {
+        console.warn("[API] Socket.IO instance not found");
+      }
+
       res.json(session);
     } catch (error) {
       console.error("Error starting session:", error);

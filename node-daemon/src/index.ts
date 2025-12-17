@@ -48,7 +48,21 @@ async function main() {
         const NODE_ID = process.env.NODE_ID || "node_123";
         const OPERATOR_ADDRESS = process.env.OPERATOR_ADDRESS || "0x0000000000000000000000000000000000000000";
 
-        const platform = new PlatformClient(PLATFORM_URL, NODE_ID, OPERATOR_ADDRESS);
+        const platform = new PlatformClient(PLATFORM_URL, NODE_ID, OPERATOR_ADDRESS, async (data) => {
+            console.log(`[Daemon] Adding peer for session ${data.sessionId}`);
+
+            // In a real system, we would generate a unique IP or pull from a pool
+            // For prototype, we mock the IP assignment logic
+            // data.userPublicKey comes from the handshake in a real implementation
+
+            // This is where we would call:
+            // await wg.addPeer({
+            //    publicKey: data.userPublicKey, 
+            //    allowedIps: "10.8.0.x/32"
+            // });
+
+            console.log(`[Daemon] Peer added successfully for user ${data.userAddress}`);
+        });
 
         // 4. Teardown on exit
         const stop = async () => {

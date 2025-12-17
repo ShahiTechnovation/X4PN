@@ -4,10 +4,17 @@ export class PlatformClient {
     private socket: Socket;
     private nodeId: string;
     private operatorAddress: string;
+    private onSessionStartCallback?: (data: any) => Promise<void>;
 
-    constructor(platformUrl: string, nodeId: string, operatorAddress: string) {
+    constructor(
+        platformUrl: string,
+        nodeId: string,
+        operatorAddress: string,
+        onSessionStart?: (data: any) => Promise<void>
+    ) {
         this.nodeId = nodeId;
         this.operatorAddress = operatorAddress;
+        this.onSessionStartCallback = onSessionStart;
 
         console.log(`[Platform] Initializing connection to ${platformUrl}`);
 
@@ -50,8 +57,18 @@ export class PlatformClient {
         });
     }
 
-    private handleSessionStart(data: any) {
+    private async handleSessionStart(data: any) {
         console.log(`[Platform] 📩 Received session request for user: ${data.userAddress}`);
-        // TODO: Trigger WireGuard peer addition here
+
+        if (this.onSessionStartCallback) {
+            try {
+                await this.onSessionStartCallback(data);
+                // Confirm success back to platform (optional)
+                this.socket.emit("session:confirmed", { sessionId: data.sessionId });
+            } catch (error: any) {
+                console.error(`[Platform] Failed to handle session: ${error.message}`);
+                this.socket.emit("session:failed", { sessionId: data.sessionId, error: error.message });
+            }
+        }
     }
 }
