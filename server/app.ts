@@ -19,6 +19,17 @@ export async function createApp(options?: { disableStatic?: boolean }) {
     const app = express();
     const httpServer = createServer(app);
 
+    if (!process.env.DATABASE_URL && process.env.NODE_ENV === "production") {
+        app.use((_req, res) => {
+            res.status(500).send(`
+                <h1>Configuration Error</h1>
+                <p><strong>DATABASE_URL</strong> is not set in your environment variables.</p>
+                <p>The application cannot connect to the database. Please configure it in your Vercel project settings.</p>
+            `);
+        });
+        return { app, httpServer };
+    }
+
     // Redis Client
     const redisClient = createClient({
         url: process.env.REDIS_URL || "redis://localhost:6379"
