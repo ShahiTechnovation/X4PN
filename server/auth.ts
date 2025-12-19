@@ -1,6 +1,13 @@
 import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { ethers } from "ethers";
+import { logger } from "./logger";
+import { z } from "zod";
+
+const loginSchema = z.object({
+    address: z.string().min(1, "Address is required"),
+    signature: z.string().min(1, "Signature is required")
+});
 
 // Simple in-memory nonces for now. In prod, use Redis or DB with expiry.
 const LoginNonces = new Map<string, string>();
@@ -24,11 +31,12 @@ export function setupAuth(app: Express) {
     // 2. Verify Signature & Login
     app.post("/api/auth/login", async (req: Request, res: Response) => {
         try {
-            const { address, signature } = req.body;
-
-            if (!address || !signature) {
-                return res.status(400).json({ error: "Missing address or signature" });
+            const result = loginSchema.safeParse(req.body);
+            if (!result.success) {
+                return res.status(400).json({ error: result.error.errors[0].message });
             }
+
+            const { address, signature } = result.data;
 
             const storedNonce = LoginNonces.get(address.toLowerCase());
             if (!storedNonce) {
@@ -64,14 +72,14 @@ export function setupAuth(app: Express) {
             // Save session explicitly (some stores require this)
             req.session.save((err) => {
                 if (err) {
-                    console.error("Session save error:", err);
+                    logger.error(`Session save error: ${err}`);
                     return res.status(500).json({ error: "Failed to create session" });
                 }
                 res.json({ message: "Logged in successfully", user });
             });
 
         } catch (error) {
-            console.error("Login error:", error);
+            logger.error(`Login error: ${error}`);
             res.status(500).json({ error: "Internal Server Error" });
         }
     });

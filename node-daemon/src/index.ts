@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PlatformClient } from "./platform-client";
 import { WireGuardService } from "./wireguard";
 import os from "os";
@@ -10,6 +11,12 @@ const WG_IP = process.env.WG_IP || "10.8.0.1/24";
 async function main() {
     console.log("🚀 Starting X4PN Node Daemon...");
     console.log(`OS: ${os.platform()} ${os.release()}`);
+
+    console.log(`OS: ${os.platform()} ${os.release()}`);
+
+    if (process.env.SIMULATION === "true") {
+        return runSimulation();
+    }
 
     try {
         // 1. Initialize WireGuard Keys (Kernel Mode)
@@ -48,6 +55,9 @@ async function main() {
             console.warn(`   Generated Private Key: ${privateKey}`);
             console.warn(`   Operator Address: ${wallet.address}`);
             console.warn("   Action: Register this address in the Platform Dashboard.");
+        } else {
+            const wallet = new ethers.Wallet(privateKey);
+            console.log(`✅ Loaded Private Key. Address: ${wallet.address}`);
         }
 
         const platform = new PlatformClient(PLATFORM_URL, NODE_ID, privateKey, async (data) => {
@@ -108,6 +118,9 @@ function runSimulation() {
         const wallet = ethers.Wallet.createRandom();
         privateKey = wallet.privateKey;
         console.warn(`   Operator Address: ${wallet.address}`);
+    } else {
+        const wallet = new ethers.Wallet(privateKey);
+        console.log(`✅ [Sim] Loaded Private Key. Address: ${wallet.address}`);
     }
 
     console.log(`[Sim] Connecting to ${PLATFORM_URL}...`);

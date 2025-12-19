@@ -28,7 +28,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # 3. Node Daemon (Simulation Mode for Local Dev)
+  # 3. Redis (Cache & Sessions)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 4. Node Daemon (Simulation Mode for Local Dev)
   # In production, this runs on a separate VPS
   daemon:
     build:
@@ -48,3 +56,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
