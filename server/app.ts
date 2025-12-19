@@ -15,7 +15,7 @@ import { RedisStore } from "connect-redis";
 import { setupSocketServer } from "./socket";
 import { register, httpRequestDurationMicroseconds } from "./metrics";
 
-export async function createApp() {
+export async function createApp(options?: { disableStatic?: boolean }) {
     const app = express();
     const httpServer = createServer(app);
 
@@ -117,7 +117,7 @@ export async function createApp() {
         }
     });
 
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !options?.disableStatic) {
         serveStatic(app);
     } else if (process.env.NODE_ENV !== "test") {
         // Only setup Vite in dev, not test or prod
